@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'components/search_item.dart';
 import '/ui/screens/Settings/settings_screen_controller.dart';
 import '../../widgets/modified_text_field.dart';
+import '../../widgets/voice_listening_indicator.dart';
 import '/ui/navigator.dart';
 import 'search_screen_controller.dart';
 
@@ -52,7 +53,7 @@ class SearchScreen extends StatelessWidget {
                   ),
             Expanded(
               child: Padding(
-                padding: EdgeInsets.only(top: topPadding, left: 5),
+                padding: EdgeInsets.only(top: topPadding, left: 10, right: 10),
                 child: Column(
                   children: [
                     Align(
@@ -71,6 +72,7 @@ class SearchScreen extends StatelessWidget {
                       textInputAction: TextInputAction.search,
                       onChanged: searchScreenController.onChanged,
                       onSubmitted: (val) {
+                        searchScreenController.stopVoiceIfListening();
                         if (val.contains("https://")) {
                           searchScreenController.filterLinks(Uri.parse(val));
                           searchScreenController.reset();
@@ -84,15 +86,40 @@ class SearchScreen extends StatelessWidget {
                           .isBottomNavBarEnabled.isFalse,
                       cursorColor: Theme.of(context).textTheme.bodySmall!.color,
                       decoration: InputDecoration(
-                          contentPadding: const EdgeInsets.only(left: 5),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 10),
                           focusColor: Colors.white,
                           hintText: "searchDes".tr,
-                          suffix: IconButton(
-                            onPressed: searchScreenController.reset,
-                            icon: const Icon(Icons.close),
-                            splashRadius: 16,
-                            iconSize: 19,
-                          )),
+                          suffixIcon: GetPlatform.isAndroid
+                              ? Obx(() => searchScreenController
+                                      .isDownloadingModel.isTrue
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                      ),
+                                    )
+                                  : GestureDetector(
+                                      onTap: searchScreenController
+                                          .toggleVoiceSearch,
+                                      child: Icon(
+                                        searchScreenController
+                                                .isListening.isTrue
+                                            ? Icons.mic
+                                            : Icons.mic_none,
+                                        color: searchScreenController
+                                                .isListening.isTrue
+                                            ? Colors.redAccent
+                                            : Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey,
+                                        size: 22,
+                                      ),
+                                    ))
+                              : IconButton(
+                                  onPressed: searchScreenController.reset,
+                                  icon: const Icon(Icons.close),
+                                  splashRadius: 16,
+                                  iconSize: 19,
+                                )),
                     ),
                     Expanded(
                       child: Obx(() {

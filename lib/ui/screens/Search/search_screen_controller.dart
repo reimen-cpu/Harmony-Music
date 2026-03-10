@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 
 import '/utils/app_link_controller.dart' show ProcessLink;
 import '/services/music_service.dart';
+import '/services/voice_search_service.dart';
 
 class SearchScreenController extends GetxController with ProcessLink {
   final textInputController = TextEditingController();
@@ -12,6 +14,13 @@ class SearchScreenController extends GetxController with ProcessLink {
   final historyQuerylist = [].obs;
   late Box<dynamic> queryBox;
   final urlPasted = false.obs;
+
+  // Voice search state
+  final isListening = false.obs;
+  final isDownloadingModel = false.obs;
+  final downloadProgress = 0.obs;
+  VoiceSearchService? _voiceService;
+  final List<StreamSubscription> _voiceSubs = [];
 
   // Desktop search bar related
   final focusNode = FocusNode();
@@ -31,6 +40,61 @@ class SearchScreenController extends GetxController with ProcessLink {
     }
     queryBox = await Hive.openBox("searchQuery");
     historyQuerylist.value = queryBox.values.toList().reversed.toList();
+
+    // Initialize voice search on Android
+    if (GetPlatform.isAndroid) {
+      _initVoiceSearch();
+    }
+  }
+
+  void _initVoiceSearch() {
+    try {
+      _voiceService = Get.find<VoiceSearchService>();
+      _voiceSubs.add(
+        _voiceService!.isListening.listen((val) => isListening.value = val),
+      );
+      _voiceSubs.add(
+        _voiceService!.isDownloadingModel.listen((val) => isDownloadingModel.value = val),
+      );
+      _voiceSubs.add(
+        _voiceService!.downloadProgress.listen((val) => downloadProgress.value = val),
+      );
+      _voiceSubs.add(
+        _voiceService!.currentPartialText.listen((text) {
+          if (text.isNotEmpty && isListening.value) {
+            textInputController.text = text;
+            textInputController.selection =
+                TextSelection.collapsed(offset: textInputController.text.length);
+            onChanged(text);
+          }
+        }),
+      );
+      _voiceSubs.add(
+        _voiceService!.errorMessage.listen((msg) {
+          if (msg.isNotEmpty) {
+            Get.snackbar(
+              'Búsqueda por voz',
+              msg,
+              snackPosition: SnackPosition.BOTTOM,
+              duration: const Duration(seconds: 3),
+            );
+          }
+        }),
+      );
+    } catch (_) {
+      // VoiceSearchService not yet available, ignore
+    }
+  }
+
+  void toggleVoiceSearch() {
+    _voiceService?.toggleListening();
+  }
+
+  /// Auto-stop voice recognition if currently listening.
+  void stopVoiceIfListening() {
+    if (isListening.value) {
+      _voiceService?.stopListening();
+    }
   }
 
   Future<void> onChanged(String text) async {
@@ -50,6 +114,7 @@ class SearchScreenController extends GetxController with ProcessLink {
   }
 
   Future<void> addToHistryQueryList(String txt) async {
+    stopVoiceIfListening();
     if (historyQuerylist.length > 9) {
       final queryForRemoval = queryBox.getAt(0);
       await queryBox.deleteAt(0);
@@ -77,10 +142,15 @@ class SearchScreenController extends GetxController with ProcessLink {
   }
 
   @override
-  void dispose() {
+  void onClose() {
+    stopVoiceIfListening();
+    for (final sub in _voiceSubs) {
+      sub.cancel();
+    }
+    _voiceSubs.clear();
     focusNode.dispose();
     textInputController.dispose();
     queryBox.close();
-    super.dispose();
+    super.onClose();
   }
 }

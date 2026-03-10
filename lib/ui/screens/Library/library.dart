@@ -107,8 +107,8 @@ class PlaylistNAlbumLibraryWidget extends StatelessWidget {
     final settingscrnController = Get.find<SettingsScreenController>();
     final size = MediaQuery.of(context).size;
 
-    const double itemHeight = 180;
-    const double itemWidth = 130;
+    final double itemHeight = GetPlatform.isAndroid ? 190.0 : 180.0;
+    const double itemWidth = 130.0;
     final topPadding = context.isLandscape ? 50.0 : 90.0;
 
     return Padding(

@@ -30,7 +30,7 @@ class ContentListItem extends StatelessWidget {
       },
       child: Container(
         width: 130,
-        height: 180,
+        height: GetPlatform.isAndroid ? 190.0 : 180.0,
         padding: const EdgeInsets.symmetric(horizontal: 5),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -21,6 +21,7 @@ import 'ui/screens/Home/home_screen_controller.dart';
 import 'ui/screens/Library/library_controller.dart';
 import 'utils/system_tray.dart';
 import 'utils/update_check_flag_file.dart';
+import '/services/voice_search_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -93,6 +94,9 @@ Future<void> startApplicationServices() async {
   Get.lazyPut(() => LibraryArtistsController(), fenix: true);
   Get.lazyPut(() => SettingsScreenController(), fenix: true);
   Get.lazyPut(() => Downloader(), fenix: true);
+  if (GetPlatform.isAndroid) {
+    Get.putAsync(() => VoiceSearchService().init(), permanent: true);
+  }
   if (GetPlatform.isDesktop) {
     Get.lazyPut(() => SearchScreenController(), fenix: true);
     Get.put(DesktopSystemTray());
