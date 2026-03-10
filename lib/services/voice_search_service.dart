@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:audio_service/audio_service.dart';
 
 /// Service bridging Flutter ↔ Android native voice search via MethodChannel/EventChannel.
 /// Only works on Android. All calls are no-ops on other platforms.
@@ -48,7 +49,8 @@ class VoiceSearchService extends GetxService {
     final type = event['type'] as String?;
     switch (type) {
       case 'state':
-        _handleStateChange(event['state'] as String?, event['message'] as String?);
+        _handleStateChange(
+            event['state'] as String?, event['message'] as String?);
         break;
       case 'partial':
         currentPartialText.value = event['text'] as String? ?? '';
@@ -70,6 +72,7 @@ class VoiceSearchService extends GetxService {
       case 'idle':
         isListening.value = false;
         isDownloadingModel.value = false;
+        _restoreVolume();
         break;
       case 'checking_permission':
         break;
@@ -90,8 +93,18 @@ class VoiceSearchService extends GetxService {
         isListening.value = false;
         isDownloadingModel.value = false;
         errorMessage.value = message ?? 'Error desconocido';
+        _restoreVolume();
         break;
     }
+  }
+
+  void _restoreVolume() {
+    try {
+      if (Get.isRegistered<AudioHandler>()) {
+        final audioHandler = Get.find<AudioHandler>();
+        audioHandler.customAction('setVolume', {'value': 100});
+      }
+    } catch (_) {}
   }
 
   /// Start voice recognition. Handles permission + model download automatically.
@@ -99,6 +112,15 @@ class VoiceSearchService extends GetxService {
     if (!GetPlatform.isAndroid) return;
     errorMessage.value = '';
     currentPartialText.value = '';
+
+    // Ducking: lower volume to 10%
+    try {
+      if (Get.isRegistered<AudioHandler>()) {
+        final audioHandler = Get.find<AudioHandler>();
+        await audioHandler.customAction('setVolume', {'value': 10});
+      }
+    } catch (_) {}
+
     try {
       await _methodChannel.invokeMethod('startListening');
     } on PlatformException catch (e) {

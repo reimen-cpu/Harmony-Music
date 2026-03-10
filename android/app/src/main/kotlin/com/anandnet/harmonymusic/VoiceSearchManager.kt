@@ -9,14 +9,15 @@ import android.os.Looper
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import java.lang.ref.WeakReference
 
 /**
  * Facade orchestrating the voice search flow:
  * permission check → model download → speech recognition.
  */
 class VoiceSearchManager(
-    private val context: Context,
-    private val activity: Activity
+    context: Context,
+    activity: Activity
 ) {
     companion object {
         private const val TAG = "VoiceSearchManager"
@@ -39,7 +40,10 @@ class VoiceSearchManager(
         fun onDownloadProgress(progress: Int)
     }
 
-    private val downloader = VoskModelDownloader(context)
+    private val contextRef = WeakReference(context.applicationContext)
+    private val activityRef = WeakReference(activity)
+
+    private val downloader = VoskModelDownloader(context.applicationContext)
     private val recognizer = SpeechRecognizerController()
     private val mainHandler = Handler(Looper.getMainLooper())
     private var listener: StateListener? = null
@@ -69,12 +73,15 @@ class VoiceSearchManager(
             return // Already downloading
         }
 
+        val appContext = contextRef.get() ?: return
+        val currentActivity = activityRef.get() ?: return
+
         // Check RECORD_AUDIO permission
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
+        if (ContextCompat.checkSelfPermission(appContext, Manifest.permission.RECORD_AUDIO)
             != PackageManager.PERMISSION_GRANTED) {
             updateState(State.CHECKING_PERMISSION)
             ActivityCompat.requestPermissions(
-                activity,
+                currentActivity,
                 arrayOf(Manifest.permission.RECORD_AUDIO),
                 PERMISSION_REQUEST_CODE
             )

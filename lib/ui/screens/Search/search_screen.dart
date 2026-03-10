@@ -99,10 +99,12 @@ class SearchScreen extends StatelessWidget {
                                         strokeWidth: 2.5,
                                       ),
                                     )
-                                  : GestureDetector(
-                                      onTap: searchScreenController
+                                  : IconButton(
+                                      onPressed: searchScreenController
                                           .toggleVoiceSearch,
-                                      child: Icon(
+                                      iconSize: 22,
+                                      splashRadius: 20,
+                                      icon: Icon(
                                         searchScreenController
                                                 .isListening.isTrue
                                             ? Icons.mic
@@ -111,7 +113,6 @@ class SearchScreen extends StatelessWidget {
                                                 .isListening.isTrue
                                             ? Colors.redAccent
                                             : Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey,
-                                        size: 22,
                                       ),
                                     ))
                               : IconButton(

@@ -2,4 +2,5 @@
 -keepclassmembers class com.sun.jna.** {
     *;
 }
+-dontwarn java.awt.**
 -keep class org.vosk.** { *; }
