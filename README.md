@@ -1,6 +1,8 @@
 <div align="center">
 
-# ❗**This repository is no longer maintained.**
+# 📱 **Harmony Music - Android Optimized Fork**
+*This repository is an active fork dedicated to keeping the Android application updated, optimized, and maintained.*  
+*(Note: The original upstream repository is no longer maintained)*
 
 </div>
 
