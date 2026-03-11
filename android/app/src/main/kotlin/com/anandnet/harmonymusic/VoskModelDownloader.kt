@@ -19,10 +19,20 @@ class VoskModelDownloader(private val context: Context) {
 
     companion object {
         private const val TAG = "VoskModelDownloader"
-        private const val MODEL_URL = "https://alphacephei.com/vosk/models/vosk-model-small-es-0.42.zip"
-        private const val MODEL_DIR_NAME = "vosk-model"
         private const val NOTIFICATION_CHANNEL_ID = "vosk_model_download"
         private const val NOTIFICATION_ID = 9001
+
+        fun getModelUrl(lang: String): String {
+            return if (lang == "en") {
+                "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip"
+            } else {
+                "https://alphacephei.com/vosk/models/vosk-model-small-es-0.42.zip"
+            }
+        }
+
+        fun getModelDirName(lang: String): String {
+            return "vosk-model-$lang"
+        }
     }
 
     interface DownloadListener {
@@ -34,12 +44,12 @@ class VoskModelDownloader(private val context: Context) {
     private var isCancelled = false
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-    fun getModelPath(): String {
-        return File(context.filesDir, MODEL_DIR_NAME).absolutePath
+    fun getModelPath(lang: String): String {
+        return File(context.filesDir, getModelDirName(lang)).absolutePath
     }
 
-    fun isModelReady(): Boolean {
-        val modelDir = File(context.filesDir, MODEL_DIR_NAME)
+    fun isModelReady(lang: String): Boolean {
+        val modelDir = File(context.filesDir, getModelDirName(lang))
         // Check for key Vosk model files
         return modelDir.exists() &&
                 modelDir.isDirectory &&
@@ -53,7 +63,7 @@ class VoskModelDownloader(private val context: Context) {
         isCancelled = true
     }
 
-    fun downloadModel(listener: DownloadListener) {
+    fun downloadModel(lang: String, listener: DownloadListener) {
         isCancelled = false
         createNotificationChannel()
 
@@ -61,10 +71,10 @@ class VoskModelDownloader(private val context: Context) {
             var connection: HttpURLConnection? = null
             var inputStream: InputStream? = null
             var outputStream: FileOutputStream? = null
-            val tempFile = File(context.cacheDir, "vosk-model-temp.zip")
+            val tempFile = File(context.cacheDir, "vosk-model-temp-$lang.zip")
 
             try {
-                val url = URL(MODEL_URL)
+                val url = URL(getModelUrl(lang))
                 connection = url.openConnection() as HttpURLConnection
                 connection.connectTimeout = 30000
                 connection.readTimeout = 30000
@@ -107,13 +117,13 @@ class VoskModelDownloader(private val context: Context) {
 
                 // Extract ZIP
                 showExtractingNotification()
-                extractZip(tempFile, listener)
+                extractZip(tempFile, lang, listener)
 
                 // Cleanup temp file
                 tempFile.delete()
 
                 cancelNotification()
-                listener.onComplete(getModelPath())
+                listener.onComplete(getModelPath(lang))
 
             } catch (e: IOException) {
                 Log.e(TAG, "Download failed", e)
@@ -128,8 +138,8 @@ class VoskModelDownloader(private val context: Context) {
         }.start()
     }
 
-    private fun extractZip(zipFile: File, listener: DownloadListener) {
-        val destDir = File(context.filesDir, MODEL_DIR_NAME)
+    private fun extractZip(zipFile: File, lang: String, listener: DownloadListener) {
+        val destDir = File(context.filesDir, getModelDirName(lang))
 
         // Clean previous model if exists
         if (destDir.exists()) {

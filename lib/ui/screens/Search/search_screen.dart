@@ -56,12 +56,40 @@ class SearchScreen extends StatelessWidget {
                 padding: EdgeInsets.only(top: topPadding, left: 10, right: 10),
                 child: Column(
                   children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        "search".tr,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          "search".tr,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        if (GetPlatform.isAndroid)
+                          Obx(() => searchScreenController
+                                  .isDownloadingModel.isFalse
+                              ? InkWell(
+                                  onTap: searchScreenController.toggleLanguage,
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12.0, vertical: 6.0),
+                                    child: Text(
+                                      searchScreenController
+                                          .selectedLanguage.value
+                                          .toUpperCase(),
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.color,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : const SizedBox.shrink()),
+                      ],
                     ),
                     const SizedBox(
                       height: 10,
@@ -86,17 +114,23 @@ class SearchScreen extends StatelessWidget {
                           .isBottomNavBarEnabled.isFalse,
                       cursorColor: Theme.of(context).textTheme.bodySmall!.color,
                       decoration: InputDecoration(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 10),
                           focusColor: Colors.white,
                           hintText: "searchDes".tr,
                           suffixIcon: GetPlatform.isAndroid
                               ? Obx(() => searchScreenController
                                       .isDownloadingModel.isTrue
-                                  ? const SizedBox(
-                                      width: 22,
-                                      height: 22,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2.5,
+                                  ? const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 14.0),
+                                      child: SizedBox(
+                                        width: 22,
+                                        height: 22,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.5,
+                                          color: Colors.blue,
+                                        ),
                                       ),
                                     )
                                   : IconButton(
@@ -112,7 +146,11 @@ class SearchScreen extends StatelessWidget {
                                         color: searchScreenController
                                                 .isListening.isTrue
                                             ? Colors.redAccent
-                                            : Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey,
+                                            : Theme.of(context)
+                                                    .textTheme
+                                                    .bodySmall
+                                                    ?.color ??
+                                                Colors.grey,
                                       ),
                                     ))
                               : IconButton(

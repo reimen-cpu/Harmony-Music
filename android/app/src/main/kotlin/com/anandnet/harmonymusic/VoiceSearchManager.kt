@@ -49,13 +49,15 @@ class VoiceSearchManager(
     private var listener: StateListener? = null
     private var currentState = State.IDLE
 
+    private var currentLang: String = "es"
+
     fun setListener(listener: StateListener?) {
         this.listener = listener
     }
 
     fun getCurrentState(): State = currentState
 
-    fun isModelReady(): Boolean = downloader.isModelReady()
+    fun isModelReady(lang: String): Boolean = downloader.isModelReady(lang)
 
     fun isListening(): Boolean = currentState == State.LISTENING
 
@@ -63,7 +65,12 @@ class VoiceSearchManager(
      * Start the voice search flow.
      * Checks permission → checks model → downloads if needed → starts recognition.
      */
-    fun startListening() {
+    fun startListening(lang: String) {
+        if (currentLang != lang) {
+            recognizer.release() // Force re-init next time
+        }
+        currentLang = lang
+
         if (currentState == State.LISTENING) {
             stopListening()
             return
@@ -95,7 +102,7 @@ class VoiceSearchManager(
      * Called after permission is granted (either already had it or just granted).
      */
     fun proceedAfterPermission() {
-        if (downloader.isModelReady()) {
+        if (downloader.isModelReady(currentLang)) {
             initAndListen()
         } else {
             downloadAndListen()
@@ -132,7 +139,7 @@ class VoiceSearchManager(
 
     private fun downloadAndListen() {
         updateState(State.DOWNLOADING)
-        downloader.downloadModel(object : VoskModelDownloader.DownloadListener {
+        downloader.downloadModel(currentLang, object : VoskModelDownloader.DownloadListener {
             override fun onProgress(progress: Int) {
                 mainHandler.post {
                     listener?.onDownloadProgress(progress)
@@ -156,7 +163,7 @@ class VoiceSearchManager(
     private fun initAndListen() {
         updateState(State.INITIALIZING)
 
-        val modelPath = downloader.getModelPath()
+        val modelPath = downloader.getModelPath(currentLang)
         if (!recognizer.isModelInitialized()) {
             if (!recognizer.initModel(modelPath)) {
                 updateState(State.ERROR, "Error al inicializar el modelo de voz")

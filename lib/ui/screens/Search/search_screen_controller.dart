@@ -19,6 +19,7 @@ class SearchScreenController extends GetxController with ProcessLink {
   final isListening = false.obs;
   final isDownloadingModel = false.obs;
   final downloadProgress = 0.obs;
+  final selectedLanguage = 'es'.obs;
   VoiceSearchService? _voiceService;
   final List<StreamSubscription> _voiceSubs = [];
 
@@ -57,6 +58,9 @@ class SearchScreenController extends GetxController with ProcessLink {
         _voiceService!.isDownloadingModel.listen((val) => isDownloadingModel.value = val),
       );
       _voiceSubs.add(
+        _voiceService!.selectedLanguage.listen((val) => selectedLanguage.value = val),
+      );
+      _voiceSubs.add(
         _voiceService!.downloadProgress.listen((val) => downloadProgress.value = val),
       );
       _voiceSubs.add(
@@ -88,6 +92,12 @@ class SearchScreenController extends GetxController with ProcessLink {
 
   void toggleVoiceSearch() {
     _voiceService?.toggleListening();
+  }
+
+  void toggleLanguage() {
+    final newLang = selectedLanguage.value == 'es' ? 'en' : 'es';
+    selectedLanguage.value = newLang; // Update UI immediately
+    _voiceService?.setLanguage(newLang);
   }
 
   /// Auto-stop voice recognition if currently listening.

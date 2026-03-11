@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:hive/hive.dart';
 import 'package:audio_service/audio_service.dart';
 
 /// Service bridging Flutter ↔ Android native voice search via MethodChannel/EventChannel.
@@ -16,6 +17,7 @@ class VoiceSearchService extends GetxService {
   final currentPartialText = ''.obs;
   final errorMessage = ''.obs;
   final isModelReady = false.obs;
+  final selectedLanguage = 'es'.obs;
 
   StreamSubscription? _eventSubscription;
 
@@ -23,9 +25,14 @@ class VoiceSearchService extends GetxService {
   Future<VoiceSearchService> init() async {
     if (!GetPlatform.isAndroid) return this;
 
+    try {
+      final appPrefs = Hive.box('AppPrefs');
+      selectedLanguage.value = appPrefs.get('voiceSearchLang', defaultValue: 'es');
+    } catch (_) {}
+
     // Check initial model status
     try {
-      final ready = await _methodChannel.invokeMethod<bool>('checkModelStatus');
+      final ready = await _methodChannel.invokeMethod<bool>('checkModelStatus', {'lang': selectedLanguage.value});
       isModelReady.value = ready ?? false;
     } catch (_) {
       isModelReady.value = false;
@@ -122,7 +129,7 @@ class VoiceSearchService extends GetxService {
     } catch (_) {}
 
     try {
-      await _methodChannel.invokeMethod('startListening');
+      await _methodChannel.invokeMethod('startListening', {'lang': selectedLanguage.value});
     } on PlatformException catch (e) {
       errorMessage.value = e.message ?? 'Error al iniciar reconocimiento';
     }
@@ -161,12 +168,22 @@ class VoiceSearchService extends GetxService {
   Future<bool> checkModelStatus() async {
     if (!GetPlatform.isAndroid) return false;
     try {
-      final ready = await _methodChannel.invokeMethod<bool>('checkModelStatus');
+      final ready = await _methodChannel.invokeMethod<bool>('checkModelStatus', {'lang': selectedLanguage.value});
       isModelReady.value = ready ?? false;
       return isModelReady.value;
     } catch (_) {
       return false;
     }
+  }
+
+  Future<void> setLanguage(String lang) async {
+    if (selectedLanguage.value == lang) return;
+    selectedLanguage.value = lang;
+    try {
+      final appPrefs = Hive.box('AppPrefs');
+      await appPrefs.put('voiceSearchLang', lang);
+    } catch (_) {}
+    await checkModelStatus();
   }
 
   @override

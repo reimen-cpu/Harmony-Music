@@ -20,11 +20,13 @@ class MainActivity : AudioServiceActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "checkModelStatus" -> {
-                        result.success(voiceSearchManager?.isModelReady() == true)
+                        val lang = call.argument<String>("lang") ?: "es"
+                        result.success(voiceSearchManager?.isModelReady(lang) == true)
                     }
                     "startListening" -> {
+                        val lang = call.argument<String>("lang") ?: "es"
                         setupVoiceSearchListener()
-                        voiceSearchManager?.startListening()
+                        voiceSearchManager?.startListening(lang)
                         result.success(null)
                     }
                     "stopListening" -> {
@@ -32,10 +34,11 @@ class MainActivity : AudioServiceActivity() {
                         result.success(null)
                     }
                     "downloadModel" -> {
+                        val lang = call.argument<String>("lang") ?: "es"
                         setupVoiceSearchListener()
                         voiceSearchManager?.let { manager ->
-                            if (!manager.isModelReady()) {
-                                manager.startListening() // This will trigger download flow
+                            if (!manager.isModelReady(lang)) {
+                                manager.startListening(lang) // This will trigger download flow
                             }
                         }
                         result.success(null)
